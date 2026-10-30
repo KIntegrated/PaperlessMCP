@@ -4,6 +4,7 @@ using ModelContextProtocol.Server;
 using PaperlessMCP.Client;
 using PaperlessMCP.Models.Common;
 using PaperlessMCP.Utils;
+using System.Text.RegularExpressions;
 
 namespace PaperlessMCP.Tools;
 
@@ -19,7 +20,8 @@ namespace PaperlessMCP.Tools;
 public static class AttributeSearchTools
 {
     /// <summary>Upper bound on pages fetched per entity type (25 × MAX_PAGE_SIZE items).</summary>
-    public const int MaxPagesPerEntity = 25;
+    /// <remarks>Mutable for tests that must exercise the page-cap path.</remarks>
+    public static int MaxPagesPerEntity = 25;
 
     /// <summary>Upper bound on matched results returned per entity type.</summary>
     public const int MaxMatchesPerEntity = 100;
@@ -74,12 +76,14 @@ public static class AttributeSearchTools
         var warnings = new List<string>();
         var matches = new List<object>();
         var matchedCounts = new Dictionary<string, int>();
+        var pageSize = client.GetEffectivePageSize(null);
 
         foreach (var entity in wanted)
         {
-            var pageSize = client.GetEffectivePageSize(null);
             var entityMatches = new List<object>();
             var entityTruncated = false;
+            var pagesLoaded = 0;
+            var lastPageWasFull = false;
 
             for (var page = 1; page <= MaxPagesPerEntity && !entityTruncated; page++)
             {
@@ -91,10 +95,26 @@ public static class AttributeSearchTools
                     break;
                 }
 
+                pagesLoaded = page;
+                lastPageWasFull = items.Count >= pageSize;
+
                 foreach (var (id, name, matchPattern) in items)
                 {
-                    var nameMatched = compiled!.IsMatch(name);
-                    var matchMatched = includeMatchPatterns && matchPattern != null && compiled.IsMatch(matchPattern);
+                    var nameMatched = TryMatch(compiled!, name, out var nameTimedOut);
+                    var matchTimedOut = false;
+                    var matchMatched = includeMatchPatterns
+                        && matchPattern != null
+                        && TryMatch(compiled!, matchPattern, out matchTimedOut);
+                    if (nameTimedOut || matchTimedOut)
+                    {
+                        var timeoutError = McpErrorResponse.Create(
+                            ErrorCodes.Validation,
+                            $"Pattern exceeded the {WildcardPattern.MatchTimeout.TotalSeconds:F0}s match limit while scanning {entity}. Make it more specific.",
+                            new { pattern, mode = regex ? "regex" : "wildcard" },
+                            new McpMeta { PaperlessBaseUrl = client.BaseUrl });
+                        return JsonSerializer.Serialize(timeoutError);
+                    }
+
                     if (!nameMatched && !matchMatched)
                     {
                         continue;
@@ -123,6 +143,13 @@ public static class AttributeSearchTools
             {
                 warnings.Add($"{entity}: more than {MaxMatchesPerEntity} matches; output truncated. Refine the pattern or search fewer entity types.");
             }
+            else if (pagesLoaded == MaxPagesPerEntity && lastPageWasFull)
+            {
+                // Page budget exhausted with data still flowing: with a small
+                // MAX_PAGE_SIZE this can mean only a few thousand items scanned —
+                // say so instead of letting the model assume completeness.
+                warnings.Add($"{entity}: search stopped after fetching {MaxPagesPerEntity} pages (page size {pageSize}); results may be incomplete. Narrow the pattern, narrow the entity types, or raise MAX_PAGE_SIZE.");
+            }
         }
 
         var response = McpResponse<object>.Success(
@@ -137,6 +164,24 @@ public static class AttributeSearchTools
             new McpMeta { PaperlessBaseUrl = client.BaseUrl },
             warnings);
         return JsonSerializer.Serialize(response);
+    }
+
+    /// <summary>
+    /// RegexMatchTimeoutException aborts a tool call otherwise; a pathological
+    /// pattern must surface as an actionable error instead.
+    /// </summary>
+    private static bool TryMatch(Regex compiled, string input, out bool timedOut)
+    {
+        timedOut = false;
+        try
+        {
+            return compiled.IsMatch(input);
+        }
+        catch (RegexMatchTimeoutException)
+        {
+            timedOut = true;
+            return false;
+        }
     }
 
     private static List<string> ParseEntities(string? entities)

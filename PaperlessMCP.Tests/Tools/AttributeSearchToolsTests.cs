@@ -347,6 +347,45 @@ public class AttributeSearchToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task PageCapExhausted_AddsIncompleteWarning()
+    {
+        // Shrink the page budget so both pages are full pages: the loop ends
+        // with data still flowing, which must surface as a completeness warning
+        // instead of a silent stop.
+        var original = AttributeSearchTools.MaxPagesPerEntity;
+        AttributeSearchTools.MaxPagesPerEntity = 2;
+        // Fixture default is 100; with a 2-item page size below, both mocked
+        // pages count as "full" pages, so the loop ends on the cap, not a data end.
+        _factory.Options.MaxPageSize = 2;
+        try
+        {
+            _factory.MockHandler
+                .Expect("https://paperless.example.com/api/tags/")
+                .WithQueryString("page", "1")
+                .Respond("application/json", TagListJson((1, "Tomorrow Gas"), (2, "Tomcat")));
+            _factory.MockHandler
+                .Expect("https://paperless.example.com/api/tags/")
+                .WithQueryString("page", "2")
+                .Respond("application/json", TagListJson((3, "Tomorrow Power"), (4, "Tomato")));
+
+            var result = await AttributeSearchTools.Search(
+                _factory.Client, "tom*", entities: "tags");
+
+            _factory.MockHandler.VerifyNoOutstandingExpectation();
+            var json = JsonDocument.Parse(result).RootElement;
+            json.GetProperty("ok").GetBoolean().Should().BeTrue();
+            json.GetProperty("warnings").GetArrayLength().Should().BeGreaterThanOrEqualTo(1,
+                "the loop ended because the page cap, not a data end, was reached");
+            json.GetProperty("warnings")[0].GetString().Should()
+                .Contain("may be incomplete").And.Contain("tags");
+        }
+        finally
+        {
+            AttributeSearchTools.MaxPagesPerEntity = original;
+        }
+    }
+
+    [Fact]
     public async Task MultiPagePagination_GathersMatchesAcrossPages()
     {
         // The client never requests page 2 unless page 1 filled its page size, so

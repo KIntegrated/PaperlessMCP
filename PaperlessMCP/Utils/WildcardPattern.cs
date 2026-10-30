@@ -39,18 +39,26 @@ public static class WildcardPattern
         string source;
         if (regexMode)
         {
-            source = pattern;
+            // A custom Regex object cannot be reused across threads anyway; build
+            // once with the final options and let an invalid pattern surface as a
+            // VALIDATION error instead of an unhandled exception on first use.
             try
             {
-                // Validate eagerly so an invalid pattern becomes a VALIDATION error
-                // with the regex message instead of an unhandled exception.
-                _ = new Regex(source, RegexOptions.CultureInvariant, MatchTimeout);
+                var options = RegexOptions.CultureInvariant;
+                if (ignoreCase)
+                {
+                    options |= RegexOptions.IgnoreCase;
+                }
+
+                regex = new Regex(pattern, options, MatchTimeout);
             }
             catch (ArgumentException ex)
             {
                 error = $"Invalid regex pattern: {ex.Message}";
                 return false;
             }
+
+            return true;
         }
         else
         {
@@ -75,16 +83,26 @@ public static class WildcardPattern
 
             sb.Append('$');
             source = sb.ToString();
-        }
+            try
+            {
+                var options = RegexOptions.CultureInvariant;
+                if (ignoreCase)
+                {
+                    options |= RegexOptions.IgnoreCase;
+                }
 
-        var options = RegexOptions.CultureInvariant;
-        if (ignoreCase)
-        {
-            options |= RegexOptions.IgnoreCase;
-        }
+                regex = new Regex(source, options, MatchTimeout);
+            }
+            catch (ArgumentException)
+            {
+                // Unreachable: every non-wildcard character is Regex.Escape()'d and
+                // the wildcard stem is fixed. Kept for totality of the contract.
+                error = "Invalid wildcard pattern";
+                return false;
+            }
 
-        regex = new Regex(source, options, MatchTimeout);
-        return true;
+            return true;
+        }
     }
 
     /// <summary>
