@@ -144,11 +144,21 @@ public class TagToolsTests : IDisposable
     }
 
     [Fact]
-    public async Task Create_WhenDuplicate_ReturnsErrorWithDetails()
+    public async Task Create_WhenDuplicate_ReturnsConflictWithExistingId()
     {
-        // Arrange
+        // Arrange: Paperless rejects the name colliding with an existing tag; the
+        // conflict path resolves the existing tag's ID via the list endpoint.
         var errorBody = """{"name": ["tag with this name already exists."]}""";
         _factory.SetupPostWithError("api/tags/", HttpStatusCode.BadRequest, errorBody);
+        var existingTag = TestFixtures.Tags.CreateTag(77, "Existing Tag");
+        _factory.SetupGet("api/tags/", JsonSerializer.Serialize(
+            new
+            {
+                count = 1,
+                next = (string?)null,
+                previous = (string?)null,
+                results = new[] { existingTag }
+            }));
 
         // Act
         var result = await TagTools.Create(_factory.Client, "Existing Tag");
@@ -156,12 +166,13 @@ public class TagToolsTests : IDisposable
         // Assert
         var json = JsonDocument.Parse(result);
         json.RootElement.GetProperty("ok").GetBoolean().Should().BeFalse();
-        json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("UPSTREAM_ERROR");
-
-        // Verify error details include status code and response body
+        json.RootElement.GetProperty("error").GetProperty("code").GetString().Should().Be("CONFLICT");
         var details = json.RootElement.GetProperty("error").GetProperty("details");
+        details.GetProperty("existing_id").GetInt32().Should().Be(77);
+        details.GetProperty("existing_name").GetString().Should().Be("Existing Tag");
         details.GetProperty("status_code").GetInt32().Should().Be(400);
-        details.GetProperty("response_body").GetString().Should().Contain("already exists");
+        json.RootElement.GetProperty("error").GetProperty("message").GetString()
+            .Should().Contain("ID 77");
     }
 
     [Fact]

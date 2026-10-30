@@ -267,7 +267,7 @@ Requires [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 |------|--------------|
 | `paperless_correspondents_list` | List all correspondents |
 | `paperless_correspondents_get` | Get a correspondent by ID |
-| `paperless_correspondents_create` | Create with optional matching rules |
+| `paperless_correspondents_create` | Create with optional matching rules. A duplicate name returns the existing entry's ID (`CONFLICT`) so it can be reused |
 | `paperless_correspondents_update` | Update a correspondent |
 | `paperless_correspondents_delete` | Delete a correspondent |
 | `paperless_correspondents_bulk_delete` | Delete multiple correspondents |

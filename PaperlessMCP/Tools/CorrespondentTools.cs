@@ -4,6 +4,7 @@ using ModelContextProtocol.Server;
 using PaperlessMCP.Client;
 using PaperlessMCP.Models.Common;
 using PaperlessMCP.Models.Correspondents;
+using PaperlessMCP.Utils;
 using static PaperlessMCP.Utils.ParsingHelpers;
 
 namespace PaperlessMCP.Tools;
@@ -79,20 +80,20 @@ public static class CorrespondentTools
             MatchingAlgorithm = matchingAlgorithm
         };
 
-        var correspondent = await client.CreateCorrespondentAsync(request).ConfigureAwait(false);
+        var result = await client.CreateCorrespondentWithResultAsync(request).ConfigureAwait(false);
 
-        if (correspondent == null)
+        if (!result.IsSuccess)
         {
-            var errorResponse = McpErrorResponse.Create(
-                ErrorCodes.UpstreamError,
-                "Failed to create correspondent",
-                meta: new McpMeta { PaperlessBaseUrl = client.BaseUrl }
-            );
+            // Unique-name conflicts come back as CONFLICT with the existing
+            // object's ID so the model can reuse or update it; other failures
+            // carry the upstream status and body in details.
+            var errorResponse = await ConflictDetection.BuildCreateFailureAsync(
+                client, "correspondent", name, result.Error!).ConfigureAwait(false);
             return JsonSerializer.Serialize(errorResponse);
         }
 
         var response = McpResponse<Correspondent>.Success(
-            correspondent,
+            result.Value!,
             new McpMeta { PaperlessBaseUrl = client.BaseUrl }
         );
         return JsonSerializer.Serialize(response);

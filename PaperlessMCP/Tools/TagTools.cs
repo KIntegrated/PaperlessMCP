@@ -4,6 +4,7 @@ using ModelContextProtocol.Server;
 using PaperlessMCP.Client;
 using PaperlessMCP.Models.Common;
 using PaperlessMCP.Models.Tags;
+using PaperlessMCP.Utils;
 using static PaperlessMCP.Utils.ParsingHelpers;
 
 namespace PaperlessMCP.Tools;
@@ -89,13 +90,10 @@ public static class TagTools
 
         if (!result.IsSuccess)
         {
-            var error = result.Error!;
-            var errorResponse = McpErrorResponse.Create(
-                ErrorCodes.UpstreamError,
-                $"Failed to create tag: {error.Message}",
-                new { status_code = (int)error.StatusCode, response_body = error.ResponseBody },
-                new McpMeta { PaperlessBaseUrl = client.BaseUrl }
-            );
+            // Same conflict-aware shape as the other attribute-create tools: a
+            // unique-name rejection becomes CONFLICT with the existing tag's ID.
+            var errorResponse = await ConflictDetection.BuildCreateFailureAsync(
+                client, "tag", name, result.Error!).ConfigureAwait(false);
             return JsonSerializer.Serialize(errorResponse);
         }
 

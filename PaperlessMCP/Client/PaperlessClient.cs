@@ -631,7 +631,13 @@ public class PaperlessClient
 
     public async Task<Correspondent?> CreateCorrespondentAsync(CorrespondentCreateRequest request, CancellationToken cancellationToken = default)
     {
-        return await PostAsync<Correspondent>("api/correspondents/", request, cancellationToken).ConfigureAwait(false);
+        var result = await CreateCorrespondentWithResultAsync(request, cancellationToken).ConfigureAwait(false);
+        return result.IsSuccess ? result.Value : null;
+    }
+
+    public async Task<ApiResult<Correspondent>> CreateCorrespondentWithResultAsync(CorrespondentCreateRequest request, CancellationToken cancellationToken = default)
+    {
+        return await PostWithResultAsync<Correspondent>("api/correspondents/", request, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<Correspondent?> UpdateCorrespondentAsync(int id, CorrespondentUpdateRequest request, CancellationToken cancellationToken = default)
@@ -667,7 +673,13 @@ public class PaperlessClient
 
     public async Task<DocumentType?> CreateDocumentTypeAsync(DocumentTypeCreateRequest request, CancellationToken cancellationToken = default)
     {
-        return await PostAsync<DocumentType>("api/document_types/", request, cancellationToken).ConfigureAwait(false);
+        var result = await CreateDocumentTypeWithResultAsync(request, cancellationToken).ConfigureAwait(false);
+        return result.IsSuccess ? result.Value : null;
+    }
+
+    public async Task<ApiResult<DocumentType>> CreateDocumentTypeWithResultAsync(DocumentTypeCreateRequest request, CancellationToken cancellationToken = default)
+    {
+        return await PostWithResultAsync<DocumentType>("api/document_types/", request, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<DocumentType?> UpdateDocumentTypeAsync(int id, DocumentTypeUpdateRequest request, CancellationToken cancellationToken = default)
@@ -703,7 +715,13 @@ public class PaperlessClient
 
     public async Task<StoragePath?> CreateStoragePathAsync(StoragePathCreateRequest request, CancellationToken cancellationToken = default)
     {
-        return await PostAsync<StoragePath>("api/storage_paths/", request, cancellationToken).ConfigureAwait(false);
+        var result = await CreateStoragePathWithResultAsync(request, cancellationToken).ConfigureAwait(false);
+        return result.IsSuccess ? result.Value : null;
+    }
+
+    public async Task<ApiResult<StoragePath>> CreateStoragePathWithResultAsync(StoragePathCreateRequest request, CancellationToken cancellationToken = default)
+    {
+        return await PostWithResultAsync<StoragePath>("api/storage_paths/", request, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<StoragePath?> UpdateStoragePathAsync(int id, StoragePathUpdateRequest request, CancellationToken cancellationToken = default)

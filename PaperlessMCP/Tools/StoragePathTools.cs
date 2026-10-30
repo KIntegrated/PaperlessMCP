@@ -4,6 +4,7 @@ using ModelContextProtocol.Server;
 using PaperlessMCP.Client;
 using PaperlessMCP.Models.Common;
 using PaperlessMCP.Models.StoragePaths;
+using PaperlessMCP.Utils;
 using static PaperlessMCP.Utils.ParsingHelpers;
 
 namespace PaperlessMCP.Tools;
@@ -81,20 +82,17 @@ public static class StoragePathTools
             MatchingAlgorithm = matchingAlgorithm
         };
 
-        var storagePath = await client.CreateStoragePathAsync(request).ConfigureAwait(false);
+        var result = await client.CreateStoragePathWithResultAsync(request).ConfigureAwait(false);
 
-        if (storagePath == null)
+        if (!result.IsSuccess)
         {
-            var errorResponse = McpErrorResponse.Create(
-                ErrorCodes.UpstreamError,
-                "Failed to create storage path",
-                meta: new McpMeta { PaperlessBaseUrl = client.BaseUrl }
-            );
+            var errorResponse = await ConflictDetection.BuildCreateFailureAsync(
+                client, "storage path", name, result.Error!).ConfigureAwait(false);
             return JsonSerializer.Serialize(errorResponse);
         }
 
         var response = McpResponse<StoragePath>.Success(
-            storagePath,
+            result.Value!,
             new McpMeta { PaperlessBaseUrl = client.BaseUrl }
         );
         return JsonSerializer.Serialize(response);

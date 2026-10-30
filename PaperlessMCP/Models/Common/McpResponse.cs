@@ -111,6 +111,7 @@ public static class ErrorCodes
     public const string NotFound = "NOT_FOUND";
     public const string Validation = "VALIDATION";
     public const string UpstreamError = "UPSTREAM_ERROR";
+    public const string Conflict = "CONFLICT";
     public const string RateLimit = "RATE_LIMIT";
     public const string Unknown = "UNKNOWN";
     public const string ConfirmationRequired = "CONFIRMATION_REQUIRED";

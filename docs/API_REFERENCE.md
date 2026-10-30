@@ -5,6 +5,7 @@ Complete reference for all MCP tools provided by PaperlessMCP.
 ## Table of Contents
 
 - [Health & Capabilities](#health--capabilities)
+- [Create Conflicts (`CONFLICT` errors)](#create-conflicts-conflict-errors)
 - [Document Operations](#document-operations)
 - [Tag Operations](#tag-operations)
 - [Correspondent Operations](#correspondent-operations)
@@ -25,6 +26,41 @@ Verify connectivity and authentication with Paperless-ngx.
 Return supported API endpoints and detected Paperless-ngx version information.
 
 **Returns:** Available endpoints, bulk operations, and server capabilities
+
+---
+
+## Create Conflicts (`CONFLICT` errors)
+
+`paperless.tags.create`, `paperless.correspondents.create`,
+`paperless.document_types.create` and `paperless.storage_paths.create` report
+Paperless's unique-name rejection as `code: "CONFLICT"` instead of a generic
+`UPSTREAM_ERROR`, with `details` carrying the conflicting name and — resolved by
+a server-side lookup — the existing object's ID:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "CONFLICT",
+    "message": "A correspondent named 'Tomorrow' already exists: ID 499. Reuse that ID instead of creating a duplicate.",
+    "details": {
+      "conflict": "unique_name",
+      "entity": "correspondent",
+      "name": "Tomorrow",
+      "existing_id": 499,
+      "existing_name": "Tomorrow",
+      "status_code": 400,
+      "upstream_message": "correspondent with this name already exists."
+    }
+  }
+}
+```
+
+When the existing ID cannot be resolved, `existing_id` is `null` and the
+message points at searching the attribute lists. Other upstream failures keep
+`UPSTREAM_ERROR` but always include `details.status_code` and
+`details.response_body` so permission, validation and server errors are
+distinguishable.
 
 ---
 

@@ -85,6 +85,53 @@ public class CorrespondentToolsTests : IDisposable
     }
 
     [Fact]
+    public async Task Create_WhenDuplicateName_ReturnsConflictWithExistingId()
+    {
+        // Arrange: Paperless rejects with DRF unique validation; the lookup that
+        // resolves the existing ID hits the (query-filtered) list endpoint.
+        _factory.SetupPostWithError("api/correspondents/", HttpStatusCode.BadRequest,
+            """{"name": ["correspondent with this name already exists."]}""");
+        _factory.SetupGet("api/correspondents/",
+            """
+            {"count":2,"next":null,"previous":null,"results":[
+                {"id":499,"slug":"tomorrow","name":"Tomorrow","match":"","matching_algorithm":1,"document_count":3,"last_correspondence":null,"owner":null},
+                {"id":500,"slug":"vodafone","name":"Vodafone Kabel","match":"","matching_algorithm":0,"document_count":9,"last_correspondence":null,"owner":null}]}
+            """
+        );
+
+        // Act
+        var result = await CorrespondentTools.Create(_factory.Client, "Tomorrow");
+
+        // Assert
+        var json = JsonDocument.Parse(result).RootElement;
+        json.GetProperty("ok").GetBoolean().Should().BeFalse();
+        var error = json.GetProperty("error");
+        error.GetProperty("code").GetString().Should().Be("CONFLICT");
+        error.GetProperty("details").GetProperty("existing_id").GetInt32().Should().Be(499);
+        error.GetProperty("details").GetProperty("existing_name").GetString().Should().Be("Tomorrow");
+        error.GetProperty("message").GetString().Should().Contain("ID 499");
+    }
+
+    [Fact]
+    public async Task Create_WhenOtherUpstreamFailure_IncludesStatusAndUpstreamBody()
+    {
+        // Arrange
+        _factory.SetupPostWithError("api/correspondents/", HttpStatusCode.InternalServerError,
+            """{"detail": "Internal Server Error"}""");
+
+        // Act
+        var result = await CorrespondentTools.Create(_factory.Client, "New Company");
+
+        // Assert
+        var json = JsonDocument.Parse(result).RootElement;
+        var error = json.GetProperty("error");
+        error.GetProperty("code").GetString().Should().Be("UPSTREAM_ERROR");
+        error.GetProperty("details").GetProperty("status_code").GetInt32().Should().Be(500);
+        error.GetProperty("details").GetProperty("response_body").GetString()
+            .Should().Contain("Internal Server Error");
+    }
+
+    [Fact]
     public async Task Update_WhenSuccessful_ReturnsUpdatedCorrespondent()
     {
         // Arrange

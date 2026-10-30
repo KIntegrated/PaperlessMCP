@@ -42,6 +42,12 @@ PaperlessMCP is an MCP (Model Context Protocol) server that bridges Paperless-ng
   - `CustomFieldTools.cs` - Custom field definitions and assignments
   - `HealthTools.cs` - Ping and capabilities
 
+Create calls for tag/correspondent/document-type/storage-path go through
+`Utils/ConflictDetection.cs`: Paperless's DRF unique-name rejection
+(`400 {"name": ["... already exists."]}`) is surfaced as `code: "CONFLICT"` with
+`details.existing_id`/`existing_name` resolved by a server-side lookup; other
+upstream failures always include `status_code` and `response_body` in details.
+
 - **Models/** - Request/response DTOs organized by entity (Documents/, Tags/, etc.). Uses `PaginatedResponse<T>` for list endpoints.
 
 ### Configuration
