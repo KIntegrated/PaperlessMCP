@@ -130,7 +130,7 @@ public class ConflictDetectionTests
         }
 
         [Fact]
-        public async Task UniqueConflict_WithoutResolvedId_PointsAtAttributesSearch()
+        public async Task UniqueConflict_WithoutResolvedId_PointsAtListTool()
         {
             _factory.SetupGet("api/correspondents/",
                 """{"count":0,"next":null,"previous":null,"results":[]}""");
@@ -146,7 +146,7 @@ public class ConflictDetectionTests
             json.GetProperty("error").GetProperty("details").GetProperty("existing_id")
                 .ValueKind.Should().Be(JsonValueKind.Null);
             json.GetProperty("error").GetProperty("message").GetString()
-                .Should().Contain("paperless_attributes_search");
+                .Should().Contain("paperless_correspondents_list");
         }
 
         [Fact]

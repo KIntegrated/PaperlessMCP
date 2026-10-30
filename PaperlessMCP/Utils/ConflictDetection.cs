@@ -131,7 +131,7 @@ public static class ConflictDetection
             }
             else
             {
-                message = $"A {entityType} named '{name}' already exists (Paperless rejected the create), but the existing ID could not be resolved. Use paperless_attributes_search to look it up before retrying.";
+                message = $"A {entityType} named '{name}' already exists (Paperless rejected the create), but the existing ID could not be resolved. Look it up via the corresponding list tool (paperless_{LookupEndpointHint(entityType)}_list) before retrying.";
             }
 
             return McpErrorResponse.Create(
@@ -163,12 +163,27 @@ public static class ConflictDetection
     }
 
     /// <summary>
-    /// Looks up an existing {entityType} by exact, case-insensitive name using a
-    /// server-side name__icontains prefilter, so uniqueness conflicts can be
-    /// answered with the existing object's ID instead of forcing the model to
-    /// re-query. Returns (null, null) when no entry matches or the type is not
-    /// recognized.
+    /// Looks up an existing {entityType} by exact, case-insensitive name,
+    /// scanning paginated list results (≤ MaxLookupPages pages), so uniqueness
+    /// conflicts can be answered with the existing object's ID instead of
+    /// forcing the model to re-query. Returns (null, null) when no entry matches
+    /// or the type is not recognized.
     /// </summary>
+    /// <summary>
+    /// Plural entity slug used by the paperless.{slug}_list tools, so a
+    /// resolvable conflict can point the model at the right lookup tool even
+    /// when no ID could be resolved here.
+    /// </summary>
+    private static string LookupEndpointHint(string entityType) => entityType.ToLowerInvariant() switch
+    {
+        "tag" => "tags",
+        "correspondent" => "correspondents",
+        "document type" => "document_types",
+        "storage path" => "storage_paths",
+        "custom field" => "custom_fields",
+        _ => entityType.ToLowerInvariant().Replace(" ", "_")
+    };
+
     public static async Task<(int? ExistingId, string? ExistingName)> FindExistingByNameAsync(
         PaperlessClient client,
         string entityType,
