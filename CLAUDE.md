@@ -40,6 +40,7 @@ PaperlessMCP is an MCP (Model Context Protocol) server that bridges Paperless-ng
   - `DocumentTools.cs` - Search, CRUD, bulk operations, upload (base64 and file path)
   - `TagTools.cs`, `CorrespondentTools.cs`, `DocumentTypeTools.cs`, `StoragePathTools.cs` - Entity management with matching algorithms
   - `CustomFieldTools.cs` - Custom field definitions and assignments
+  - `AttributeSearchTools.cs` - `paperless_attributes_search`: wildcard/regex search over the names of all attribute entities (tags, correspondents, document types, storage paths, custom fields), returning compact id/name/type results with a server-side `name__icontains` prefilter
   - `HealthTools.cs` - Ping and capabilities
 
 - **Models/** - Request/response DTOs organized by entity (Documents/, Tags/, etc.). Uses `PaginatedResponse<T>` for list endpoints.

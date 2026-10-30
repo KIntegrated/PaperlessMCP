@@ -558,13 +558,15 @@ public class PaperlessClient
 
     #region Tags
 
-    public async Task<PaginatedResult<Tag>> GetTagsAsync(int page = 1, int? pageSize = null, string? ordering = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResult<Tag>> GetTagsAsync(int page = 1, int? pageSize = null, string? ordering = null, string? nameFilter = null, CancellationToken cancellationToken = default)
     {
         var queryParams = HttpUtility.ParseQueryString(string.Empty);
         queryParams["page"] = page.ToString();
         queryParams["page_size"] = GetEffectivePageSize(pageSize).ToString();
         if (!string.IsNullOrEmpty(ordering))
             queryParams["ordering"] = ordering;
+        if (!string.IsNullOrEmpty(nameFilter))
+            queryParams["name__icontains"] = nameFilter;
 
         return await GetAsync<PaginatedResult<Tag>>($"api/tags/?{queryParams}", cancellationToken).ConfigureAwait(false)
                ?? new PaginatedResult<Tag>();
@@ -612,13 +614,15 @@ public class PaperlessClient
 
     #region Correspondents
 
-    public async Task<PaginatedResult<Correspondent>> GetCorrespondentsAsync(int page = 1, int? pageSize = null, string? ordering = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResult<Correspondent>> GetCorrespondentsAsync(int page = 1, int? pageSize = null, string? ordering = null, string? nameFilter = null, CancellationToken cancellationToken = default)
     {
         var queryParams = HttpUtility.ParseQueryString(string.Empty);
         queryParams["page"] = page.ToString();
         queryParams["page_size"] = GetEffectivePageSize(pageSize).ToString();
         if (!string.IsNullOrEmpty(ordering))
             queryParams["ordering"] = ordering;
+        if (!string.IsNullOrEmpty(nameFilter))
+            queryParams["name__icontains"] = nameFilter;
 
         return await GetAsync<PaginatedResult<Correspondent>>($"api/correspondents/?{queryParams}", cancellationToken).ConfigureAwait(false)
                ?? new PaginatedResult<Correspondent>();
@@ -648,13 +652,15 @@ public class PaperlessClient
 
     #region Document Types
 
-    public async Task<PaginatedResult<DocumentType>> GetDocumentTypesAsync(int page = 1, int? pageSize = null, string? ordering = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResult<DocumentType>> GetDocumentTypesAsync(int page = 1, int? pageSize = null, string? ordering = null, string? nameFilter = null, CancellationToken cancellationToken = default)
     {
         var queryParams = HttpUtility.ParseQueryString(string.Empty);
         queryParams["page"] = page.ToString();
         queryParams["page_size"] = GetEffectivePageSize(pageSize).ToString();
         if (!string.IsNullOrEmpty(ordering))
             queryParams["ordering"] = ordering;
+        if (!string.IsNullOrEmpty(nameFilter))
+            queryParams["name__icontains"] = nameFilter;
 
         return await GetAsync<PaginatedResult<DocumentType>>($"api/document_types/?{queryParams}", cancellationToken).ConfigureAwait(false)
                ?? new PaginatedResult<DocumentType>();
@@ -684,13 +690,15 @@ public class PaperlessClient
 
     #region Storage Paths
 
-    public async Task<PaginatedResult<StoragePath>> GetStoragePathsAsync(int page = 1, int? pageSize = null, string? ordering = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResult<StoragePath>> GetStoragePathsAsync(int page = 1, int? pageSize = null, string? ordering = null, string? nameFilter = null, CancellationToken cancellationToken = default)
     {
         var queryParams = HttpUtility.ParseQueryString(string.Empty);
         queryParams["page"] = page.ToString();
         queryParams["page_size"] = GetEffectivePageSize(pageSize).ToString();
         if (!string.IsNullOrEmpty(ordering))
             queryParams["ordering"] = ordering;
+        if (!string.IsNullOrEmpty(nameFilter))
+            queryParams["name__icontains"] = nameFilter;
 
         return await GetAsync<PaginatedResult<StoragePath>>($"api/storage_paths/?{queryParams}", cancellationToken).ConfigureAwait(false)
                ?? new PaginatedResult<StoragePath>();
@@ -720,11 +728,13 @@ public class PaperlessClient
 
     #region Custom Fields
 
-    public async Task<PaginatedResult<CustomField>> GetCustomFieldsAsync(int page = 1, int? pageSize = null, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResult<CustomField>> GetCustomFieldsAsync(int page = 1, int? pageSize = null, string? nameFilter = null, CancellationToken cancellationToken = default)
     {
         var queryParams = HttpUtility.ParseQueryString(string.Empty);
         queryParams["page"] = page.ToString();
         queryParams["page_size"] = GetEffectivePageSize(pageSize).ToString();
+        if (!string.IsNullOrEmpty(nameFilter))
+            queryParams["name__icontains"] = nameFilter;
 
         return await GetAsync<PaginatedResult<CustomField>>($"api/custom_fields/?{queryParams}", cancellationToken).ConfigureAwait(false)
                ?? new PaginatedResult<CustomField>();

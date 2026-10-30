@@ -24,7 +24,11 @@ public class MockHttpClientFactory : IDisposable
             MaxPageSize = 100
         };
 
-        MockHandler = new MockHttpMessageHandler();
+        // MockHttp ignores When-mocks while any Expect() is pending unless the
+        // handler is built with BackendDefinitionBehavior.Always. Tools issue
+        // several requests in sequence, so Always keeps When-mocks served while
+        // expectations remain outstanding.
+        MockHandler = new MockHttpMessageHandler(BackendDefinitionBehavior.Always);
         HttpClient = MockHandler.ToHttpClient();
         HttpClient.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         HttpClient.DefaultRequestHeaders.Add("Accept", PaperlessOptions.ApiAcceptHeader);

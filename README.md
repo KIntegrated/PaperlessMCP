@@ -224,7 +224,16 @@ Requires [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ## The Full Toolbox
 
-43 tools, organized by what they touch. Every entity supports full CRUD.
+44 tools, organized by what they touch. Every entity supports full CRUD.
+
+<details>
+<summary><strong>Attribute Search</strong> — find the right entity fast</summary>
+
+| Tool | What it does |
+|------|--------------|
+| `paperless_attributes_search` | Find existing tags, correspondents, document types, storage paths or custom fields by wildcard or regex pattern. Returns IDs — use them directly in other tools. |
+
+</details>
 
 <details>
 <summary><strong>Documents</strong> — the main event</summary>

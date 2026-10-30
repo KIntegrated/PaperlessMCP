@@ -5,6 +5,7 @@ Complete reference for all MCP tools provided by PaperlessMCP.
 ## Table of Contents
 
 - [Health & Capabilities](#health--capabilities)
+- [Attribute Search](#attribute-search)
 - [Document Operations](#document-operations)
 - [Tag Operations](#tag-operations)
 - [Correspondent Operations](#correspondent-operations)
@@ -25,6 +26,53 @@ Verify connectivity and authentication with Paperless-ngx.
 Return supported API endpoints and detected Paperless-ngx version information.
 
 **Returns:** Available endpoints, bulk operations, and server capabilities
+
+---
+
+## Attribute Search
+
+### `paperless_attributes_search`
+Find existing tags, correspondents, document types, storage paths or custom
+fields by name without paging through long lists. Useful on instances with
+hundreds of entries, where listing everything wastes context and ASCII-only
+ordering pushes differently-cased names onto late pages.
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `pattern` | string | Yes | - | Wildcard pattern: `*` matches any run of characters, `?` exactly one. Set `regex=true` to use a raw regular expression instead |
+| `entities` | string | No | all | Comma-separated entity types: `tags`, `correspondents`, `document_types`, `storage_paths`, `custom_fields` |
+| `regex` | bool | No | false | Treat the pattern as a raw regular expression |
+| `matchCase` | bool | No | false | Match case-sensitively |
+| `includeMatchPatterns` | bool | No | false | Also match against the auto-assignment `match` field where present |
+
+Wildcard patterns are anchored at both ends (`bank` matches only entries named
+exactly `bank`, case-insensitively; `*bank*` matches names containing `bank`).
+Patterns are compiled with metacharacters escaped, so in wildcard mode a regex
+metacharacter—including `?`, which means "optional character" in regex but "one
+character" in a glob—always behaves as a literal. Regex mode compiles with a
+2-second match timeout so pathological patterns cannot hang the call.
+
+Matching narrows server-side: a wildcard pattern with a literal chunk of at
+least 3 characters requests `name__icontains=<chunk>`, so Paperless filters
+before any paginated fetch. The search caps fetching at 25 pages per entity
+type and 100 returned matches per entity type; truncation is surfaced via
+`warnings`.
+
+**Returns:**
+
+```json
+{
+  "ok": true,
+  "result": {
+    "pattern": "*vodafone*",
+    "mode": "wildcard",
+    "entities": ["tags", "correspondents", "document_types", "storage_paths", "custom_fields"],
+    "matches": [{ "id": 123, "name": "Vodafone Kabel", "type": "correspondents" }],
+    "counts": { "tags": 0, "correspondents": 1, "document_types": 0, "storage_paths": 0, "custom_fields": 0 }
+  },
+  "warnings": []
+}
+```
 
 ---
 
